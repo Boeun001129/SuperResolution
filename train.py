@@ -1,7 +1,7 @@
 import argparse
 import os
 import copy
-
+import matplotlib.ticker as mtick
 import matplotlib.pyplot as plt
 import torch
 from torch import nn
@@ -23,11 +23,10 @@ if __name__ == '__main__':
     parser.add_argument('--scale', type=int, default=3)
     parser.add_argument('--lr', type=float, default=1e-4)
     parser.add_argument('--batch-size', type=int, default=16)
-    parser.add_argument('--num-epochs', type=int, default=200)
+    parser.add_argument('--num-epochs', type=int, default=400)
     parser.add_argument('--num-workers', type=int, default=1)
     parser.add_argument('--seed', type=int, default=123)
     args = parser.parse_args()
-
     args.outputs_dir = os.path.join(args.outputs_dir, 'x{}'.format(args.scale))
 
     if not os.path.exists(args.outputs_dir):
@@ -62,7 +61,7 @@ if __name__ == '__main__':
     best_psnr = 0.0
     tr_loss=[]
     te_loss=[]
-
+    PSNR = []
     for epoch in range(args.num_epochs):
         #训练
         model.train()
@@ -122,20 +121,42 @@ if __name__ == '__main__':
             best_psnr = epoch_psnr.avg
             best_weights = copy.deepcopy(model.state_dict())
         te_loss.append(1)
+        PSNR.append(1)
         te_loss[epoch] = te_epoch_losses.avg
+        PSNR[epoch] = epoch_psnr.avg.cpu().numpy()
 
-    x=range(0,200)
+    x = range(0,400)
+
     plt.Figure()
-    plt.subplot(2,1,1)
+    ax = plt.gca()
+    ax.yaxis.set_major_formatter(mtick.FormatStrFormatter('%.4f'))
+    ax.spines['right'].set_color('none')
+    ax.spines['top'].set_color('none')
     plt.plot(x, tr_loss)
     plt.xlabel("epoch")
     plt.ylabel("training loss")
+    plt.tight_layout()
+    plt.show()
 
+    plt.Figure()
+    ax = plt.gca()
 
-    plt.subplot(2,1,2)
+    ax.spines['right'].set_color('none')
+    ax.spines['top'].set_color('none')
     plt.plot(x, te_loss)
     plt.xlabel("epoch")
     plt.ylabel("val loss")
+    plt.tight_layout()
+    plt.show()
+
+    plt.Figure()
+
+    ax.yaxis.set_major_formatter(mtick.FormatStrFormatter('%.2f'))
+    ax.spines['right'].set_color('none')
+    ax.spines['top'].set_color('none')
+    plt.plot(x, PSNR)
+    plt.xlabel("epoch")
+    plt.ylabel("PSNR")
     plt.show()
 
     print('best epoch: {}, psnr: {:.2f}'.format(best_epoch, best_psnr))
